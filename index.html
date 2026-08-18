@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<!-- MIT License
+Copyright (c) 2025-2026 Valentyn Kolesnikov <0009-0003-9608-3364@orcid.org>
+-->
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Піксельний Арт Редактор — безкоштовний онлайн-інструмент для малювання піксельної графіки на сітці. Палітра кольорів, майстри-генератори, готові картинки-шаблони, симетрія, дзеркало, завантаження зображень, скасування дій та експорт у PNG. Підтримка української та англійської мов. | Pixel Art Editor - free online grid drawing tool with color palette, wizards, templates, symmetry demo, image loading, undo/redo and PNG export.">
+<meta name="keywords" content="піксель арт, pixel art, редактор, editor, малювання, drawing, PNG, спрайт, sprite, шаблони, templates">
+<meta name="author" content="Pixel Art Editor">
+<meta name="theme-color" content="#1a1a2e">
+<meta property="og:title" content="Піксельний Арт Редактор">
+<meta property="og:description" content="Малюй піксельну графіку онлайн та експортуй у PNG">
+<meta property="og:type" content="website">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231a1a2e'/%3E%3Crect x='6' y='6' width='6' height='6' fill='%23e94560'/%3E%3Crect x='12' y='6' width='6' height='6' fill='%23ffd166'/%3E%3Crect x='18' y='6' width='6' height='6' fill='%2306d6a0'/%3E%3Crect x='6' y='12' width='6' height='6' fill='%23ffd166'/%3E%3Crect x='12' y='12' width='6' height='6' fill='%233a86ff'/%3E%3Crect x='18' y='12' width='6' height='6' fill='%23e94560'/%3E%3Crect x='6' y='18' width='6' height='6' fill='%2306d6a0'/%3E%3Crect x='12' y='18' width='6' height='6' fill='%23e94560'/%3E%3Crect x='18' y='18' width='6' height='6' fill='%23ffd166'/%3E%3C/svg%3E">
+<title>Піксельний Арт Редактор</title>
+<style>
+  * {
+    margin: 0; padding: 0; box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    user-select: none; -webkit-tap-highlight-color: transparent;
+  }
+
+  :root {
+    --bg-1: #1a1a2e; --bg-2: #16213e; --accent: #e94560;
+    --accent-2: #0f3460; --panel: #22223b; --light: #f0f0f5; --success: #06d6a0;
+  }
+
+  body {
+    background: linear-gradient(135deg, var(--bg-1), var(--bg-2));
+    color: var(--light); min-height: 100vh; padding: 16px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+
+  .topbar {
+    width: 100%; max-width: 1400px; display: flex;
+    justify-content: space-between; align-items: center;
+    gap: 12px; margin-bottom: 18px; flex-wrap: wrap;
+  }
+  header { text-align: left; }
+  h1 {
+    font-size: 1.9rem;
+    background: linear-gradient(90deg, #e94560, #ffb703, #8ecae6);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    letter-spacing: 1px;
+  }
+  .subtitle { font-size: 0.85rem; color: #9a9ab8; margin-top: 2px; }
+  .lang-switch {
+    display: flex; gap: 6px; background: var(--panel); padding: 6px;
+    border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); flex-shrink: 0;
+  }
+  .lang-btn {
+    background: transparent; border: none; color: #b0b0d0;
+    padding: 8px 14px; border-radius: 7px; cursor: pointer;
+    font-size: 0.85rem; font-weight: 600; transition: all 0.15s;
+  }
+  .lang-btn.active { background: var(--accent); color: #fff; }
+  .lang-btn:hover:not(.active) { background: rgba(255,255,255,0.08); }
+
+  .app {
+    display: grid; grid-template-columns: 260px 1fr 260px; gap: 20px;
+    justify-content: center; align-items: start; max-width: 1400px; width: 100%;
+  }
+  .app.vertical { display: flex; flex-direction: column; align-items: center; }
+  .app.vertical .controls, .app.vertical .sidebar { width: 100%; max-width: 500px; min-width: 0; }
+  .app.vertical .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 640px; }
+
+  .panel {
+    background: var(--panel); border-radius: 14px; padding: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.06);
+  }
+  .controls, .sidebar { display: flex; flex-direction: column; gap: 14px; }
+  .control-group label {
+    display: block; font-size: 0.75rem; color: #b0b0d0; margin-bottom: 6px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .palette { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .swatch {
+    width: 100%; aspect-ratio: 1; border-radius: 6px; cursor: pointer;
+    border: 2px solid transparent; transition: transform 0.1s, border 0.1s;
+  }
+  .swatch:hover { transform: scale(1.12); }
+  .swatch.active { border-color: #fff; box-shadow: 0 0 8px rgba(255,255,255,0.6); }
+  .color-picker-row { display: flex; gap: 8px; align-items: center; }
+  input[type="color"] {
+    width: 44px; height: 44px; border: none; border-radius: 8px;
+    cursor: pointer; background: none; flex-shrink: 0;
+  }
+
+  .btn {
+    background: var(--accent-2); color: var(--light); border: none;
+    padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 0.85rem;
+    transition: background 0.15s, transform 0.1s;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .btn:hover { background: #16549c; transform: translateY(-1px); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .btn.accent { background: var(--accent); }
+  .btn.accent:hover { background: #ff5c78; }
+  .btn.success { background: var(--success); color: #06231a; }
+  .btn.success:hover { background: #0af3b8; }
+  .btn.ghost { background: transparent; border: 1px solid rgba(255,255,255,0.15); }
+  .btn.ghost:hover { background: rgba(255,255,255,0.08); }
+  .btn.active { background: var(--accent); box-shadow: 0 0 0 2px rgba(255,255,255,0.25) inset; }
+  .btn.small { padding: 8px 8px; font-size: 0.8rem; }
+  .tool-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn-row .btn { flex: 1; }
+
+  select, input[type="number"], input[type="range"] {
+    width: 100%; padding: 8px; border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: var(--bg-2); color: var(--light); font-size: 0.85rem;
+  }
+  input[type="range"] { padding: 0; }
+  .size-row { display: flex; gap: 8px; align-items: center; }
+  .size-row input { width: 60px; text-align: center; }
+  .size-row span { color: #9a9ab8; }
+
+  .canvas-wrap { display: flex; flex-direction: column; align-items: center; position: sticky; top: 16px; }
+  #gridCanvas {
+    background:
+      linear-gradient(45deg, #2a2a40 25%, transparent 25%),
+      linear-gradient(-45deg, #2a2a40 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #2a2a40 75%),
+      linear-gradient(-45deg, transparent 75%, #2a2a40 75%);
+    background-size: 20px 20px; background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+    background-color: #33334d; border-radius: 8px; cursor: crosshair;
+    image-rendering: pixelated; touch-action: none; max-width: 100%;
+  }
+  .toggle-row { display: flex; gap: 6px; }
+  .info { font-size: 0.75rem; color: #7a7a9a; text-align: center; margin-top: 10px; }
+  .history-info { font-size: 0.7rem; color: #7a7a9a; text-align: center; margin-top: 4px; }
+  .slider-row { display: flex; align-items: center; gap: 8px; }
+  .slider-row .val { min-width: 30px; text-align: right; font-size: 0.85rem; color: var(--success); }
+
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    display: none; align-items: center; justify-content: center;
+    z-index: 100; padding: 16px; animation: fadeIn 0.15s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--panel); border-radius: 16px; padding: 24px;
+    max-width: 460px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.1); max-height: 90vh; overflow-y: auto;
+    animation: popIn 0.18s ease;
+  }
+  @keyframes popIn { from { transform: scale(0.92); opacity: 0.6; } to { transform: scale(1); opacity: 1; } }
+  .modal h2 {
+    font-size: 1.3rem; margin-bottom: 6px;
+    background: linear-gradient(90deg, #e94560, #ffb703);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .modal h3 {
+    font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;
+    color: #b0b0d0; margin: 18px 0 10px;
+  }
+  .modal p { color: #9a9ab8; font-size: 0.85rem; margin-bottom: 16px; line-height: 1.5; }
+
+  .wizard-list { display: flex; flex-direction: column; gap: 10px; }
+  .wizard-item {
+    display: flex; align-items: center; gap: 12px; background: var(--bg-2);
+    padding: 12px 14px; border-radius: 10px; cursor: pointer;
+    transition: all 0.15s; border: 1px solid transparent;
+  }
+  .wizard-item:hover { border-color: var(--accent); transform: translateX(4px); }
+  .wizard-item .ico { font-size: 1.6rem; }
+  .wizard-item .txt strong { display: block; font-size: 0.95rem; }
+  .wizard-item .txt small { color: #9a9ab8; font-size: 0.75rem; }
+  .modal-close { margin-top: 16px; width: 100%; }
+
+  /* Template grid with preview thumbnails */
+  .template-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+  }
+  .template-item {
+    background: var(--bg-2); border-radius: 10px; padding: 8px;
+    cursor: pointer; text-align: center; border: 1px solid transparent;
+    transition: all 0.15s;
+  }
+  .template-item:hover { border-color: var(--accent); transform: translateY(-3px); }
+  .template-item canvas {
+    width: 100%; aspect-ratio: 1; image-rendering: pixelated;
+    border-radius: 6px; background: #33334d; display: block;
+  }
+  .template-item span { font-size: 0.7rem; color: #b0b0d0; display: block; margin-top: 5px; }
+
+  /* Symmetry demo */
+  .symmetry-demo { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .sym-canvas-row { display: flex; gap: 16px; align-items: center; justify-content: center; flex-wrap: wrap; }
+  .sym-block { text-align: center; }
+  .sym-block canvas {
+    image-rendering: pixelated; border-radius: 8px; background: #33334d;
+    border: 2px solid rgba(255,255,255,0.1);
+  }
+  .sym-block .lbl { font-size: 0.72rem; color: #9a9ab8; margin-top: 6px; display: block; }
+  .sym-arrow { font-size: 1.8rem; color: var(--accent); }
+  .sym-controls { display: flex; gap: 8px; }
+  .sym-controls .btn { flex: 1; }
+  .sym-desc {
+    font-size: 0.8rem; color: #b0b0d0; text-align: center;
+    background: var(--bg-2); padding: 12px; border-radius: 10px; line-height: 1.5;
+  }
+
+  .dialog-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .dialog-actions .btn { flex: 1; padding: 12px; }
+  .dialog-icon { font-size: 2.5rem; text-align: center; margin-bottom: 8px; }
+  .section-divider { height: 1px; background: rgba(255,255,255,0.08); margin: 2px 0; }
+
+  @media (max-width: 1100px) {
+    .app { grid-template-columns: 240px 1fr; }
+    .sidebar { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  }
+  @media (max-width: 760px) {
+    .app { display: flex; flex-direction: column; align-items: center; }
+    .controls, .sidebar { width: 100%; max-width: 500px; }
+    .sidebar { display: flex; }
+    h1 { font-size: 1.4rem; }
+    .topbar { justify-content: center; }
+    header { text-align: center; }
+    .canvas-wrap { position: static; }
+    .template-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <header>
+    <h1 data-i18n="title">Піксельний Арт Редактор</h1>
+    <p class="subtitle" data-i18n="subtitle">Малюй пікселями та експортуй у PNG</p>
+  </header>
+  <div class="lang-switch">
+    <button class="lang-btn active" data-lang="uk">УКР</button>
+    <button class="lang-btn" data-lang="en">EN</button>
+  </div>
+</div>
+
+<div class="app" id="app">
+  <div class="panel controls">
+    <div class="control-group">
+      <label data-i18n="tools">Інструменти</label>
+      <div class="tool-grid">
+        <button class="btn small active" id="toolPen" data-i18n="pen">✏️</button>
+        <button class="btn small" id="toolErase" data-i18n="eraser">🧽</button>
+        <button class="btn small" id="toolFill" data-i18n="fill">🪣</button>
+        <button class="btn small" id="toolPick" data-i18n="picker">💧</button>
+        <button class="btn small" id="toolLine" data-i18n="line">📏</button>
+        <button class="btn small" id="toolRect" data-i18n="rect">▭</button>
+        <button class="btn small" id="toolCircle" data-i18n="circle">⬭</button>
+        <button class="btn small" id="toolSpray" data-i18n="spray">💨</button>
+        <button class="btn small" id="toolShade" data-i18n="shade">🌗</button>
+      </div>
+    </div>
+    <div class="control-group">
+      <label data-i18n="brushSize">Розмір пензля</label>
+      <div class="slider-row">
+        <input type="range" id="brushSize" min="1" max="6" value="1">
+        <span class="val" id="brushVal">1</span>
+      </div>
+    </div>
+    <div class="control-group">
+      <label data-i18n="mirror">Дзеркало / Симетрія</label>
+      <div class="btn-row">
+        <button class="btn small" id="mirrorX" data-i18n="mirrorX">↔</button>
+        <button class="btn small" id="mirrorY" data-i18n="mirrorY">↕</button>
+      </div>
+    </div>
+    <div class="section-divider"></div>
+    <div class="control-group">
+      <label data-i18n="history">Історія дій</label>
+      <div class="btn-row">
+        <button class="btn" id="undoBtn" data-i18n="undo">↩️</button>
+        <button class="btn" id="redoBtn" data-i18n="redo">↪️</button>
+      </div>
+      <p class="history-info" id="historyInfo"></p>
+    </div>
+  </div>
+
+  <div class="panel canvas-wrap">
+    <canvas id="gridCanvas"></canvas>
+    <p class="info" data-i18n="hint">Клікай або тягни для малювання</p>
+  </div>
+
+  <div class="sidebar">
+    <div class="panel control-group">
+      <label data-i18n="currentColor">Поточний колір</label>
+      <div class="color-picker-row">
+        <input type="color" id="colorPicker" value="#e94560">
+        <button class="btn accent" id="addColorBtn" style="flex:1" data-i18n="addColor">+ Додати</button>
+      </div>
+      <label style="margin-top:12px" data-i18n="palette">Палітра</label>
+      <div class="palette" id="palette"></div>
+    </div>
+    <div class="panel control-group">
+      <button class="btn success" id="wizardBtn" style="width:100%" data-i18n="wizards">🧙 Майстри</button>
+      <button class="btn ghost" id="loadImageBtn" style="width:100%; margin-top:10px" data-i18n="loadImage">🖼️ Завантажити зображення</button>
+      <input type="file" id="imageInput" accept="image/*" style="display:none">
+      <label style="margin-top:14px" data-i18n="gridSize">Розмір сітки</label>
+      <div class="size-row">
+        <input type="number" id="gridW" value="24" min="4" max="80">
+        <span>×</span>
+        <input type="number" id="gridH" value="24" min="4" max="80">
+        <button class="btn" id="applySize" data-i18n="apply">OK</button>
+      </div>
+      <label style="margin-top:14px" data-i18n="orientation">Орієнтація</label>
+      <div class="toggle-row">
+        <button class="btn active" id="orientH" style="flex:1" data-i18n="horizontal">↔ Горизонт.</button>
+        <button class="btn" id="orientV" style="flex:1" data-i18n="vertical">↕ Вертик.</button>
+      </div>
+      <div class="btn-row" style="margin-top:14px;">
+        <button class="btn" id="clearBtn" data-i18n="clear">🗑️</button>
+        <button class="btn accent" id="exportBtn" style="flex:2" data-i18n="export">💾 PNG</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Wizard Modal -->
+<div class="modal-overlay" id="wizardModal">
+  <div class="modal">
+    <h2 data-i18n="wizardTitle">🧙 Майстри</h2>
+    <p data-i18n="wizardDesc">Готові картинки, генератори та ефекти</p>
+
+    <!-- TEMPLATES with picture previews -->
+    <h3 data-i18n="templatesHead">🖼️ Готові картинки</h3>
+    <div class="template-grid" id="templateGrid"></div>
+
+    <!-- SYMMETRY DEMO -->
+    <h3 data-i18n="symHead">🔮 Як працює симетрія</h3>
+    <div class="symmetry-demo">
+      <div class="sym-canvas-row">
+        <div class="sym-block">
+          <canvas id="symSource" width="80" height="80"></canvas>
+          <span class="lbl" data-i18n="symSource">Оригінал (ти малюєш)</span>
+        </div>
+        <div class="sym-arrow">➡️</div>
+        <div class="sym-block">
+          <canvas id="symResult" width="80" height="80"></canvas>
+          <span class="lbl" data-i18n="symResult">Результат (дзеркало)</span>
+        </div>
+      </div>
+      <div class="sym-controls">
+        <button class="btn small" id="symX" data-i18n="symX">↔ Гориз.</button>
+        <button class="btn small" id="symY" data-i18n="symY">↕ Верт.</button>
+        <button class="btn small" id="symBoth" data-i18n="symBoth">✚ Обидва</button>
+      </div>
+      <div class="sym-desc" id="symDesc" data-i18n="symDescText">
+        Симетрія автоматично копіює кожен твій піксель на протилежний бік полотна. Обери вісь вище, щоб побачити ефект.
+      </div>
+    </div>
+
+    <!-- GENERATORS / EFFECTS -->
+    <h3 data-i18n="effectsHead">✨ Генератори та ефекти</h3>
+    <div class="wizard-list">
+      <div class="wizard-item" data-wizard="checker">
+        <span class="ico">🏁</span>
+        <div class="txt"><strong data-i18n="wzChecker">Шахова дошка</strong><small data-i18n="wzCheckerD">Заповнити візерунком</small></div>
+      </div>
+      <div class="wizard-item" data-wizard="gradient">
+        <span class="ico">🌈</span>
+        <div class="txt"><strong data-i18n="wzGradient">Градієнт</strong><small data-i18n="wzGradientD">Плавний перехід кольору</small></div>
+      </div>
+      <div class="wizard-item" data-wizard="frame">
+        <span class="ico">🖼️</span>
+        <div class="txt"><strong data-i18n="wzFrame">Рамка</strong><small data-i18n="wzFrameD">Обвести полотно</small></div>
+      </div>
+      <div class="wizard-item" data-wizard="noise">
+        <span class="ico">✨</span>
+        <div class="txt"><strong data-i18n="wzNoise">Шум / Зорі</strong><small data-i18n="wzNoiseD">Випадкові пікселі</small></div>
+      </div>
+      <div class="wizard-item" data-wizard="dither">
+        <span class="ico">🎞️</span>
+        <div class="txt"><strong data-i18n="wzDither">Дизеринг</strong><small data-i18n="wzDitherD">Змішати два кольори</small></div>
+      </div>
+      <div class="wizard-item" data-wizard="mirrorArt">
+        <span class="ico">🔮</span>
+        <div class="txt"><strong data-i18n="wzMirror">Симетрія малюнка</strong><small data-i18n="wzMirrorD">Віддзеркалити ліву половину</small></div>
+      </div>
+      <div class="wizard-item" data-wizard="invert">
+        <span class="ico">🔄</span>
+        <div class="txt"><strong data-i18n="wzInvert">Інвертувати</strong><small data-i18n="wzInvertD">Змінити кольори</small></div>
+      </div>
+      <div class="wizard-item" data-wizard="rainbowFill">
+        <span class="ico">🎨</span>
+        <div class="txt"><strong data-i18n="wzRainbow">Веселка</strong><small data-i18n="wzRainbowD">Розфарбувати рядки</small></div>
+      </div>
+    </div>
+    <button class="btn modal-close" id="wizardClose" data-i18n="close">Закрити</button>
+  </div>
+</div>
+
+<!-- Generic Confirm Dialog -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal" style="max-width:360px">
+    <div class="dialog-icon" id="confirmIcon">❓</div>
+    <h2 id="confirmTitle" style="text-align:center">Підтвердження</h2>
+    <p id="confirmText" style="text-align:center"></p>
+    <div class="dialog-actions">
+      <button class="btn ghost" id="confirmCancel" data-i18n="cancel">Скасувати</button>
+      <button class="btn accent" id="confirmOk" data-i18n="confirmYes">Так</button>
+    </div>
+  </div>
+</div>
+
+<!-- Image Load Mode Dialog -->
+<div class="modal-overlay" id="imageModal">
+  <div class="modal" style="max-width:380px">
+    <div class="dialog-icon">🖼️</div>
+    <h2 style="text-align:center" data-i18n="imgTitle">Завантажити зображення</h2>
+    <p style="text-align:center" data-i18n="imgDesc">Оберіть, як додати зображення до полотна</p>
+    <div class="wizard-list">
+      <div class="wizard-item" id="imgReplace">
+        <span class="ico">🔁</span>
+        <div class="txt"><strong data-i18n="imgReplace">Замінити</strong><small data-i18n="imgReplaceD">Очистити полотно та вставити зображення</small></div>
+      </div>
+      <div class="wizard-item" id="imgAdd">
+        <span class="ico">➕</span>
+        <div class="txt"><strong data-i18n="imgAdd">Додати поверх</strong><small data-i18n="imgAddD">Накласти на поточний малюнок</small></div>
+      </div>
+    </div>
+    <button class="btn modal-close ghost" id="imageCancel" data-i18n="cancel">Скасувати</button>
+  </div>
+</div>
+
+<!-- Template Load Mode Dialog -->
+<div class="modal-overlay" id="templateModal">
+  <div class="modal" style="max-width:380px">
+    <div class="dialog-icon">🎨</div>
+    <h2 style="text-align:center" data-i18n="tplTitle">Вставити картинку</h2>
+    <p style="text-align:center" data-i18n="tplDesc">Як додати цю картинку до полотна?</p>
+    <div class="wizard-list">
+      <div class="wizard-item" id="tplReplace">
+        <span class="ico">🔁</span>
+        <div class="txt"><strong data-i18n="imgReplace">Замінити</strong><small data-i18n="tplReplaceD">Очистити полотно та вставити картинку</small></div>
+      </div>
+      <div class="wizard-item" id="tplAdd">
+        <span class="ico">➕</span>
+        <div class="txt"><strong data-i18n="imgAdd">Додати поверх</strong><small data-i18n="tplAddD">Накласти на поточний малюнок</small></div>
+      </div>
+    </div>
+    <button class="btn modal-close ghost" id="templateCancel" data-i18n="cancel">Скасувати</button>
+  </div>
+</div>
+
+<script>
+// ===== Translations =====
+const i18n = {
+  uk: {
+    title: "Піксельний Арт Редактор", subtitle: "Малюй пікселями та експортуй у PNG",
+    tools: "Інструменти", pen: "✏️", eraser: "🧽", fill: "🪣", picker: "💧",
+    line: "📏", rect: "▭", circle: "⬭", spray: "💨", shade: "🌗",
+    brushSize: "Розмір пензля", mirror: "Дзеркало / Симетрія", mirrorX: "↔", mirrorY: "↕",
+    history: "Історія дій", currentColor: "Поточний колір", addColor: "+ Додати", palette: "Палітра",
+    wizards: "🧙 Майстри", loadImage: "🖼️ Завантажити зображення",
+    gridSize: "Розмір сітки", apply: "OK",
+    orientation: "Орієнтація", horizontal: "↔ Горизонт.", vertical: "↕ Вертик.",
+    undo: "↩️", redo: "↪️", clear: "🗑️", export: "💾 PNG",
+    hint: "Клікай або тягни для малювання",
+    wizardTitle: "🧙 Майстри", wizardDesc: "Готові картинки, генератори та ефекти",
+    templatesHead: "🖼️ Готові картинки", symHead: "🔮 Як працює симетрія", effectsHead: "✨ Генератори та ефекти",
+    symSource: "Оригінал (ти малюєш)", symResult: "Результат (дзеркало)",
+    symX: "↔ Гориз.", symY: "↕ Верт.", symBoth: "✚ Обидва",
+    symDescText: "Симетрія автоматично копіює кожен твій піксель на протилежний бік полотна. Обери вісь вище, щоб побачити ефект.",
+    wzChecker: "Шахова дошка", wzCheckerD: "Заповнити візерунком",
+    wzGradient: "Градієнт", wzGradientD: "Плавний перехід кольору",
+    wzFrame: "Рамка", wzFrameD: "Обвести полотно",
+    wzNoise: "Шум / Зорі", wzNoiseD: "Випадкові пікселі",
+    wzDither: "Дизеринг", wzDitherD: "Змішати два кольори",
+    wzMirror: "Симетрія малюнка", wzMirrorD: "Віддзеркалити ліву половину",
+    wzInvert: "Інвертувати", wzInvertD: "Змінити кольори",
+    wzRainbow: "Веселка", wzRainbowD: "Розфарбувати рядки",
+    close: "Закрити", steps: "крок(и) з",
+    cancel: "Скасувати", confirmYes: "Так",
+    confirmClearTitle: "Очистити полотно?", confirmClearText: "Всі пікселі буде видалено. Цю дію можна скасувати кнопкою ↩️.",
+    imgTitle: "Завантажити зображення", imgDesc: "Оберіть, як додати зображення до полотна",
+    imgReplace: "Замінити", imgReplaceD: "Очистити полотно та вставити зображення",
+    imgAdd: "Додати поверх", imgAddD: "Накласти на поточний малюнок",
+    tplTitle: "Вставити картинку", tplDesc: "Як додати цю картинку до полотна?",
+    tplReplaceD: "Очистити полотно та вставити картинку", tplAddD: "Накласти на поточний малюнок",
+    tSmiley: "Смайлик", tHeart: "Серце", tStar: "Зірка", tTree: "Ялинка",
+    tGhost: "Привид", tCat: "Кіт", tHouse: "Дім", tFlower: "Квітка"
+  },
+  en: {
+    title: "Pixel Art Editor", subtitle: "Draw with pixels and export to PNG",
+    tools: "Tools", pen: "✏️", eraser: "🧽", fill: "🪣", picker: "💧",
+    line: "📏", rect: "▭", circle: "⬭", spray: "💨", shade: "🌗",
+    brushSize: "Brush size", mirror: "Mirror / Symmetry", mirrorX: "↔", mirrorY: "↕",
+    history: "Action history", currentColor: "Current color", addColor: "+ Add", palette: "Palette",
+    wizards: "🧙 Wizards", loadImage: "🖼️ Load image",
+    gridSize: "Grid size", apply: "OK",
+    orientation: "Orientation", horizontal: "↔ Horizontal", vertical: "↕ Vertical",
+    undo: "↩️", redo: "↪️", clear: "🗑️", export: "💾 PNG",
+    hint: "Click or drag to draw",
+    wizardTitle: "🧙 Wizards", wizardDesc: "Ready pictures, generators and effects",
+    templatesHead: "🖼️ Ready pictures", symHead: "🔮 How symmetry works", effectsHead: "✨ Generators & effects",
+    symSource: "Original (you draw)", symResult: "Result (mirror)",
+    symX: "↔ Horiz.", symY: "↕ Vert.", symBoth: "✚ Both",
+    symDescText: "Symmetry automatically copies each of your pixels to the opposite side of the canvas. Pick an axis above to see the effect.",
+    wzChecker: "Checkerboard", wzCheckerD: "Fill with pattern",
+    wzGradient: "Gradient", wzGradientD: "Smooth color transition",
+    wzFrame: "Frame", wzFrameD: "Outline the canvas",
+    wzNoise: "Noise / Stars", wzNoiseD: "Random pixels",
+    wzDither: "Dithering", wzDitherD: "Blend two colors",
+    wzMirror: "Mirror artwork", wzMirrorD: "Mirror the left half",
+    wzInvert: "Invert", wzInvertD: "Change colors",
+    wzRainbow: "Rainbow", wzRainbowD: "Colorize rows",
+    close: "Close", steps: "step(s) of",
+    cancel: "Cancel", confirmYes: "Yes",
+    confirmClearTitle: "Clear canvas?", confirmClearText: "All pixels will be removed. You can undo this with the ↩️ button.",
+    imgTitle: "Load image", imgDesc: "Choose how to add the image to canvas",
+    imgReplace: "Replace", imgReplaceD: "Clear canvas and insert image",
+    imgAdd: "Add on top", imgAddD: "Overlay onto current drawing",
+    tplTitle: "Insert picture", tplDesc: "How to add this picture to the canvas?",
+    tplReplaceD: "Clear canvas and insert picture", tplAddD: "Overlay onto current drawing",
+    tSmiley: "Smiley", tHeart: "Heart", tStar: "Star", tTree: "Tree",
+    tGhost: "Ghost", tCat: "Cat", tHouse: "House", tFlower: "Flower"
+  }
+};
+
+// ===== State =====
+const STORAGE_KEY = "pixelArtEditorState_v5";
+const MAX_HISTORY = 100;
+const defaultPalette = [
+  "#000000","#ffffff","#e94560","#f8961e","#ffd166","#06d6a0",
+  "#118ab2","#8338ec","#ff006e","#3a86ff","#8ecae6","#c77dff",
+  "#2d6a4f","#95d5b2","#7f5539","#dda15e","#adb5bd","#495057"
+];
+
+// ===== TEMPLATE PICTURES (24x24) =====
+// Each returns a pixels object {"x_y": color}
+const TEMPLATES = {
+  smiley() {
+    const p={}; const s=(x,y,c)=>p[x+"_"+y]=c;
+    for(let y=0;y<24;y++)for(let x=0;x<24;x++){const d=Math.hypot(x-11.5,y-11.5);if(d<11)s(x,y,"#ffd166");}
+    for(let a=0;a<360;a+=3){const x=Math.round(11.5+11*Math.cos(a*Math.PI/180)),y=Math.round(11.5+11*Math.sin(a*Math.PI/180));s(x,y,"#f8961e");}
+    [[8,9],[8,10],[15,9],[15,10]].forEach(([x,y])=>s(x,y,"#1a1a2e"));
+    [[7,15],[8,16],[9,17],[10,17],[11,17],[12,17],[13,17],[14,16],[15,15]].forEach(([x,y])=>s(x,y,"#e94560"));
+    return p;
+  },
+  heart() {
+    const p={}; const s=(x,y,c)=>p[x+"_"+y]=c;
+    for(let y=0;y<24;y++)for(let x=0;x<24;x++){
+      const fx=(x-11.5)/10, fy=(y-9)/11;
+      const v=Math.pow(fx*fx+fy*fy-1,3)-fx*fx*fy*fy*fy;
+      if(v<0) s(x,y, y<12 ? "#ff006e" : "#e94560");
+    }
+    return p;
+  },
+  star() {
+    const p={}; const s=(x,y,c)=>p[x+"_"+y]=c;
+    const cx=11.5, cy=11.5, R=11, r=4.5, pts=[];
+    for(let i=0;i<10;i++){const ang=-Math.PI/2+i*Math.PI/5;const rad=i%2===0?R:r;pts.push([cx+rad*Math.cos(ang),cy+rad*Math.sin(ang)]);}
+    for(let y=0;y<24;y++)for(let x=0;x<24;x++){ if(pointInPoly(x,y,pts)) s(x,y,"#ffd166"); }
+    return p;
+  },
+  tree() {
+    const p={}; const s=(x,y,c)=>p[x+"_"+y]=c;
+    // trunk
+    for(let y=18;y<23;y++)for(let x=10;x<14;x++)s(x,y,"#7f5539");
+    // triangle foliage layers
+    const layers=[[2,7],[7,11],[12,15]];
+    layers.forEach(([top,bot],li)=>{
+      for(let y=top;y<=bot;y++){const w=Math.round((y-top+1+li*2)*1.3);for(let x=11-w;x<=12+w;x++){if(x>=0&&x<24)s(x,y,"#2d6a4f");}}
+    });
+    // star on top
+    s(11,1,"#ffd166");s(12,1,"#ffd166");s(11,2,"#ffd166");s(12,2,"#ffd166");
+    return p;
+  },
+  ghost() {
+    const p={}; const s=(x,y,c)=>p[x+"_"+y]=c;
+    for(let y=2;y<20;y++)for(let x=4;x<20;x++){
+      const d=Math.hypot(x-11.5,y-9); if(y<10 && d<7.5) s(x,y,"#ffffff"); else if(y>=10&&x>=4&&x<20) s(x,y,"#ffffff");
+    }
+    // wavy bottom
+    for(let x=4;x<20;x++){ if(((x-4)>>1)%2===0) s(x,19,null!==undefined?undefined:undefined); }
+    for(let x=4;x<20;x++){ const wave=(Math.floor((x-4)/2)%2); if(wave) delete p[x+"_19"]; }
+    // eyes
+    [[8,8],[8,9],[9,8],[9,9],[14,8],[14,9],[15,8],[15,9]].forEach(([x,y])=>s(x,y,"#3a86ff"));
+    return p;
+  },
+  cat() {
+    const p={}; const s=(x,y,c)=>p[x+"_"+y]=c;
+    // ears
+    [[6,4],[7,5],[8,6],[16,6],[15,5],[14,4],[17,4]].forEach(([x,y])=>s(x,y,"#7f5539"));
+    for(let y=4;y<8;y++){for(let x=6;x<9;x++)s(x,y,"#dda15e");for(let x=15;x<18;x++)s(x,y,"#dda15e");}
+    // head
+    for(let y=7;y<19;y++)for(let x=5;x<19;x++){const d=Math.hypot(x-11.5,y-13);if(d<7)s(x,y,"#dda15e");}
+    // eyes
+    [[9,12],[9,13],[14,12],[14,13]].forEach(([x,y])=>s(x,y,"#06d6a0"));
+    // nose
+    s(11,14,"#ff006e");s(12,14,"#ff006e");
+    // whiskers
+    [[6,14],[7,14],[16,14],[17,14],[6,15],[17,15]].forEach(([x,y])=>s(x,y,"#000000"));
+    return p;
+  },
+  house() {
+    const p={}; const s=(x,y,c)=>p[x+"_"+y]=c;
+    // roof
+    for(let y=3;y<10;y++){const w=y-2;for(let x=11-w;x<=12+w;x++){if(x>=2&&x<22)s(x,y,"#e94560");}}
+    // walls
+    for(let y=10;y<21;y++)for(let x=5;x<19;x++)s(x,y,"#dda15e");
+    // door
+    for(let y=15;y<21;y++)for(let x=10;x<14;x++)s(x,y,"#7f5539");
+    // windows
+    [[7,12],[8,12],[7,13],[8,13],[15,12],[16,12],[15,13],[16,13]].forEach(([x,y])=>s(x,y,"#8ecae6"));
+    return p;
+  },
+  flower() {
+    const p={}; const s=(x,y,c)=>p[x+"_"+y]=c;
+    // stem
+    for(let y=13;y<23;y++)s(11,y,"#2d6a4f");
+    for(let y=13;y<23;y++)s(12,y,"#2d6a4f");
+    // leaves
+    [[8,17],[9,17],[9,18],[14,19],[15,19],[15,18]].forEach(([x,y])=>s(x,y,"#06d6a0"));
+    // petals
+    const petals=[[11,3],[12,3],[7,6],[8,6],[15,6],[16,6],[6,10],[7,10],[16,10],[17,10],[9,12],[10,12],[13,12],[14,12]];
+    petals.forEach(([x,y])=>s(x,y,"#ff006e"));
+    for(let y=4;y<11;y++)for(let x=8;x<16;x++){const d=Math.hypot(x-11.5,y-7);if(d<3.6)s(x,y,"#c77dff");}
+    // center
+    for(let y=6;y<9;y++)for(let x=10;x<14;x++)s(x,y,"#ffd166");
+    return p;
+  }
+};
+function pointInPoly(px,py,poly){
+  let inside=false;
+  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+    const xi=poly[i][0],yi=poly[i][1],xj=poly[j][0],yj=poly[j][1];
+    const intersect=((yi>py)!==(yj>py))&&(px<(xj-xi)*(py-yi)/(yj-yi)+xi);
+    if(intersect)inside=!inside;
+  }
+  return inside;
+}
+
+const templateMeta = [
+  {key:"smiley", name:"tSmiley"}, {key:"heart", name:"tHeart"},
+  {key:"star", name:"tStar"}, {key:"tree", name:"tTree"},
+  {key:"ghost", name:"tGhost"}, {key:"cat", name:"tCat"},
+  {key:"house", name:"tHouse"}, {key:"flower", name:"tFlower"}
+];
+
+let state = {
+  lang: "uk", gridW: 24, gridH: 24, orientation: "horizontal",
+  currentColor: "#e94560", tool: "pen", brushSize: 1,
+  mirrorX: false, mirrorY: false,
+  palette: [...defaultPalette], pixels: TEMPLATES.smiley()
+};
+
+let history = [], historyIndex = -1;
+
+// ===== DOM =====
+const canvas = document.getElementById("gridCanvas");
+const ctx = canvas.getContext("2d");
+const paletteEl = document.getElementById("palette");
+const colorPicker = document.getElementById("colorPicker");
+const gridWInput = document.getElementById("gridW");
+const gridHInput = document.getElementById("gridH");
+const appEl = document.getElementById("app");
+const brushSlider = document.getElementById("brushSize");
+const brushVal = document.getElementById("brushVal");
+const undoBtn = document.getElementById("undoBtn");
+const redoBtn = document.getElementById("redoBtn");
+const historyInfo = document.getElementById("historyInfo");
+const imageInput = document.getElementById("imageInput");
+let cellSize = 20;
+
+// ===== Storage =====
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function load() { const raw=localStorage.getItem(STORAGE_KEY); if(raw){try{state={...state,...JSON.parse(raw)};}catch(e){}} }
+
+// ===== Custom Confirm =====
+const confirmModal=document.getElementById("confirmModal");
+const confirmTitle=document.getElementById("confirmTitle");
+const confirmText=document.getElementById("confirmText");
+const confirmIcon=document.getElementById("confirmIcon");
+const confirmOk=document.getElementById("confirmOk");
+const confirmCancel=document.getElementById("confirmCancel");
+let confirmResolve=null;
+function customConfirm({title,text,icon="❓",okText,cancelText}){
+  const t=i18n[state.lang];
+  confirmTitle.textContent=title; confirmText.textContent=text; confirmIcon.textContent=icon;
+  confirmOk.textContent=okText||t.confirmYes; confirmCancel.textContent=cancelText||t.cancel;
+  confirmModal.classList.add("open");
+  return new Promise(r=>{confirmResolve=r;});
+}
+confirmOk.onclick=()=>{confirmModal.classList.remove("open");confirmResolve&&confirmResolve(true);};
+confirmCancel.onclick=()=>{confirmModal.classList.remove("open");confirmResolve&&confirmResolve(false);};
+confirmModal.addEventListener("click",e=>{if(e.target===confirmModal){confirmModal.classList.remove("open");confirmResolve&&confirmResolve(false);}});
+
+// ===== History =====
+function pushHistory(){
+  const snap=JSON.stringify(state.pixels);
+  if(historyIndex>=0&&history[historyIndex]===snap)return;
+  history=history.slice(0,historyIndex+1); history.push(snap);
+  if(history.length>MAX_HISTORY)history.shift();
+  historyIndex=history.length-1; updateHistoryUI();
+}
+function undo(){if(historyIndex>0){historyIndex--;state.pixels=JSON.parse(history[historyIndex]);drawGrid();save();updateHistoryUI();}}
+function redo(){if(historyIndex<history.length-1){historyIndex++;state.pixels=JSON.parse(history[historyIndex]);drawGrid();save();updateHistoryUI();}}
+function updateHistoryUI(){
+  undoBtn.disabled=historyIndex<=0; redoBtn.disabled=historyIndex>=history.length-1;
+  const t=i18n[state.lang];
+  historyInfo.textContent=`${historyIndex+1} / ${history.length} (${t.steps} ${MAX_HISTORY})`;
+}
+
+// ===== Language =====
+function applyLang(){
+  const t=i18n[state.lang];
+  document.documentElement.lang=state.lang;
+  document.querySelectorAll("[data-i18n]").forEach(el=>{const k=el.getAttribute("data-i18n");if(t[k]!==undefined)el.textContent=t[k];});
+  document.querySelectorAll(".lang-btn").forEach(b=>b.classList.toggle("active",b.dataset.lang===state.lang));
+  document.title=t.title; updateHistoryUI(); renderTemplates();
+}
+
+// ===== Palette =====
+function renderPalette(){
+  paletteEl.innerHTML="";
+  state.palette.forEach(color=>{
+    const sw=document.createElement("div");
+    sw.className="swatch"+(color===state.currentColor?" active":"");
+    sw.style.background=color; sw.title=color;
+    sw.addEventListener("click",()=>{state.currentColor=color;colorPicker.value=color;renderPalette();save();});
+    sw.addEventListener("dblclick",()=>{if(state.palette.length>1){state.palette=state.palette.filter(c=>c!==color);renderPalette();save();}});
+    paletteEl.appendChild(sw);
+  });
+}
+
+// ===== Canvas =====
+function computeCellSize(){const maxDim=Math.min(window.innerWidth-80,640);const larger=Math.max(state.gridW,state.gridH);cellSize=Math.max(6,Math.floor(maxDim/larger));}
+function resizeCanvas(){computeCellSize();canvas.width=state.gridW*cellSize;canvas.height=state.gridH*cellSize;drawGrid();}
+function drawGrid(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  for(let key in state.pixels){const [x,y]=key.split("_").map(Number);ctx.fillStyle=state.pixels[key];ctx.fillRect(x*cellSize,y*cellSize,cellSize,cellSize);}
+  if(cellSize>=10){
+    ctx.strokeStyle="rgba(255,255,255,0.06)";ctx.lineWidth=1;
+    for(let x=0;x<=state.gridW;x++){ctx.beginPath();ctx.moveTo(x*cellSize,0);ctx.lineTo(x*cellSize,canvas.height);ctx.stroke();}
+    for(let y=0;y<=state.gridH;y++){ctx.beginPath();ctx.moveTo(0,y*cellSize);ctx.lineTo(canvas.width,y*cellSize);ctx.stroke();}
+  }
+}
+function drawPreview(cells){drawGrid();ctx.fillStyle=state.currentColor;cells.forEach(([x,y])=>{if(x>=0&&y>=0&&x<state.gridW&&y<state.gridH)ctx.fillRect(x*cellSize,y*cellSize,cellSize,cellSize);});}
+function getCell(e){
+  const rect=canvas.getBoundingClientRect();
+  const scaleX=canvas.width/rect.width,scaleY=canvas.height/rect.height;
+  const cx=e.touches?e.touches[0].clientX:e.clientX, cy=e.touches?e.touches[0].clientY:e.clientY;
+  const x=Math.floor((cx-rect.left)*scaleX/cellSize), y=Math.floor((cy-rect.top)*scaleY/cellSize);
+  if(x<0||y<0||x>=state.gridW||y>=state.gridH)return null; return{x,y};
+}
+
+// ===== Color helpers =====
+function hexToRgb(h){h=h.replace('#','');return{r:parseInt(h.substr(0,2),16),g:parseInt(h.substr(2,2),16),b:parseInt(h.substr(4,2),16)};}
+function rgbToHex(r,g,b){return '#'+[r,g,b].map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');}
+function lerpColor(a,b,t){const c1=hexToRgb(a),c2=hexToRgb(b);return rgbToHex(c1.r+(c2.r-c1.r)*t,c1.g+(c2.g-c1.g)*t,c1.b+(c2.b-c1.b)*t);}
+function hsl(h,s,l){s/=100;l/=100;const k=n=>(n+h/30)%12;const a=s*Math.min(l,1-l);const f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));return rgbToHex(255*f(0),255*f(8),255*f(4));}
+
+// ===== Paint + mirror =====
+function paintCell(x,y,color){
+  const b=state.brushSize,off=Math.floor(b/2),points=new Set();
+  for(let dx=0;dx<b;dx++)for(let dy=0;dy<b;dy++){addPoint(x-off+dx,y-off+dy,points);}
+  points.forEach(k=>{const [px,py]=k.split("_").map(Number);if(px>=0&&py>=0&&px<state.gridW&&py<state.gridH){if(color===null)delete state.pixels[k];else state.pixels[k]=color;}});
+}
+function addPoint(px,py,set){set.add(px+"_"+py);if(state.mirrorX)set.add((state.gridW-1-px)+"_"+py);if(state.mirrorY)set.add(px+"_"+(state.gridH-1-py));if(state.mirrorX&&state.mirrorY)set.add((state.gridW-1-px)+"_"+(state.gridH-1-py));}
+
+// ===== Tools =====
+let drawing=false,startCell=null,lastCell=null;
+function lineCells(x0,y0,x1,y1){const cells=[];const dx=Math.abs(x1-x0),dy=Math.abs(y1-y0);const sx=x0<x1?1:-1,sy=y0<y1?1:-1;let err=dx-dy;while(true){cells.push([x0,y0]);if(x0===x1&&y0===y1)break;const e2=2*err;if(e2>-dy){err-=dy;x0+=sx;}if(e2<dx){err+=dx;y0+=sy;}}return cells;}
+function rectCells(x0,y0,x1,y1){const cells=[];const minX=Math.min(x0,x1),maxX=Math.max(x0,x1),minY=Math.min(y0,y1),maxY=Math.max(y0,y1);for(let x=minX;x<=maxX;x++){cells.push([x,minY]);cells.push([x,maxY]);}for(let y=minY;y<=maxY;y++){cells.push([minX,y]);cells.push([maxX,y]);}return cells;}
+function circleCells(x0,y0,x1,y1){const cells=[];const cx=(x0+x1)/2,cy=(y0+y1)/2;const rx=Math.abs(x1-x0)/2,ry=Math.abs(y1-y0)/2;if(rx<0.5||ry<0.5)return[[x0,y0]];for(let a=0;a<360;a+=2){const x=Math.round(cx+rx*Math.cos(a*Math.PI/180)),y=Math.round(cy+ry*Math.sin(a*Math.PI/180));cells.push([x,y]);}return cells;}
+
+function applyTool(cell){
+  if(!cell)return;const key=cell.x+"_"+cell.y;
+  switch(state.tool){
+    case "pen":paintCell(cell.x,cell.y,state.currentColor);break;
+    case "eraser":paintCell(cell.x,cell.y,null);break;
+    case "picker":if(state.pixels[key]){state.currentColor=state.pixels[key];colorPicker.value=state.pixels[key];renderPalette();}return;
+    case "fill":floodFill(cell.x,cell.y);break;
+    case "spray":spray(cell.x,cell.y);break;
+    case "shade":shade(cell.x,cell.y);break;
+  }
+  drawGrid();
+}
+function floodFill(x,y){const target=state.pixels[x+"_"+y]||null,repl=state.currentColor;if(target===repl)return;const stack=[[x,y]],visited=new Set();while(stack.length){const [cx,cy]=stack.pop();if(cx<0||cy<0||cx>=state.gridW||cy>=state.gridH)continue;const k=cx+"_"+cy;if(visited.has(k))continue;visited.add(k);const cur=state.pixels[k]||null;if(cur!==target)continue;state.pixels[k]=repl;stack.push([cx+1,cy],[cx-1,cy],[cx,cy+1],[cx,cy-1]);}}
+function spray(x,y){const r=state.brushSize+1;for(let i=0;i<r*3;i++){const px=x+Math.round((Math.random()-0.5)*r*2),py=y+Math.round((Math.random()-0.5)*r*2);if(Math.hypot(px-x,py-y)<=r&&px>=0&&py>=0&&px<state.gridW&&py<state.gridH){if(Math.random()>0.4){const pts=new Set();addPoint(px,py,pts);pts.forEach(k=>state.pixels[k]=state.currentColor);}}}}
+function shade(x,y){const pts=new Set();addPoint(x,y,pts);pts.forEach(kk=>{if(state.pixels[kk]){const cc=hexToRgb(state.pixels[kk]);state.pixels[kk]=rgbToHex(cc.r*0.82,cc.g*0.82,cc.b*0.82);}});}
+
+function startDraw(e){e.preventDefault();const cell=getCell(e);if(!cell)return;drawing=true;startCell=cell;lastCell=cell;if(!["line","rect","circle"].includes(state.tool))applyTool(cell);}
+function moveDraw(e){if(!drawing)return;const cell=getCell(e);if(!cell)return;e.preventDefault();if(["line","rect","circle"].includes(state.tool)){lastCell=cell;let cells;if(state.tool==="line")cells=lineCells(startCell.x,startCell.y,cell.x,cell.y);else if(state.tool==="rect")cells=rectCells(startCell.x,startCell.y,cell.x,cell.y);else cells=circleCells(startCell.x,startCell.y,cell.x,cell.y);drawPreview(cells);}else if(["fill","picker","shade"].includes(state.tool)){return;}else{lineCells(lastCell.x,lastCell.y,cell.x,cell.y).forEach(([x,y])=>{if(state.tool==="eraser")paintCell(x,y,null);else if(state.tool==="spray")spray(x,y);else paintCell(x,y,state.currentColor);});drawGrid();lastCell=cell;}}
+function endDraw(){if(!drawing)return;drawing=false;if(["line","rect","circle"].includes(state.tool)&&startCell&&lastCell){let cells;if(state.tool==="line")cells=lineCells(startCell.x,startCell.y,lastCell.x,lastCell.y);else if(state.tool==="rect")cells=rectCells(startCell.x,startCell.y,lastCell.x,lastCell.y);else cells=circleCells(startCell.x,startCell.y,lastCell.x,lastCell.y);cells.forEach(([x,y])=>paintCell(x,y,state.currentColor));drawGrid();}pushHistory();save();}
+canvas.addEventListener("mousedown",startDraw);canvas.addEventListener("mousemove",moveDraw);window.addEventListener("mouseup",endDraw);
+canvas.addEventListener("touchstart",startDraw,{passive:false});canvas.addEventListener("touchmove",moveDraw,{passive:false});canvas.addEventListener("touchend",endDraw);
+
+// ===== Tool buttons =====
+const toolBtns={pen:document.getElementById("toolPen"),eraser:document.getElementById("toolErase"),fill:document.getElementById("toolFill"),picker:document.getElementById("toolPick"),line:document.getElementById("toolLine"),rect:document.getElementById("toolRect"),circle:document.getElementById("toolCircle"),spray:document.getElementById("toolSpray"),shade:document.getElementById("toolShade")};
+function setTool(t){state.tool=t;Object.keys(toolBtns).forEach(k=>toolBtns[k].classList.toggle("active",k===t));canvas.style.cursor=t==="picker"?"cell":(t==="fill"?"pointer":"crosshair");save();}
+Object.keys(toolBtns).forEach(k=>toolBtns[k].onclick=()=>setTool(k));
+
+brushSlider.addEventListener("input",e=>{state.brushSize=parseInt(e.target.value);brushVal.textContent=state.brushSize;save();});
+document.getElementById("mirrorX").onclick=function(){state.mirrorX=!state.mirrorX;this.classList.toggle("active",state.mirrorX);save();};
+document.getElementById("mirrorY").onclick=function(){state.mirrorY=!state.mirrorY;this.classList.toggle("active",state.mirrorY);save();};
+colorPicker.addEventListener("input",e=>{state.currentColor=e.target.value;renderPalette();save();});
+document.getElementById("addColorBtn").onclick=()=>{if(!state.palette.includes(state.currentColor)){state.palette.push(state.currentColor);renderPalette();save();}};
+document.getElementById("applySize").onclick=()=>{const w=Math.min(80,Math.max(4,parseInt(gridWInput.value)||24)),h=Math.min(80,Math.max(4,parseInt(gridHInput.value)||24));state.gridW=w;state.gridH=h;for(let key in state.pixels){const [x,y]=key.split("_").map(Number);if(x>=w||y>=h)delete state.pixels[key];}gridWInput.value=w;gridHInput.value=h;resizeCanvas();pushHistory();save();};
+
+function setOrientation(o){state.orientation=o;appEl.classList.toggle("vertical",o==="vertical");document.getElementById("orientH").classList.toggle("active",o==="horizontal");document.getElementById("orientV").classList.toggle("active",o==="vertical");save();resizeCanvas();}
+document.getElementById("orientH").onclick=()=>setOrientation("horizontal");
+document.getElementById("orientV").onclick=()=>setOrientation("vertical");
+undoBtn.onclick=undo;redoBtn.onclick=redo;
+document.getElementById("clearBtn").onclick=async()=>{const t=i18n[state.lang];const ok=await customConfirm({title:t.confirmClearTitle,text:t.confirmClearText,icon:"🗑️"});if(ok){state.pixels={};drawGrid();pushHistory();save();}};
+document.getElementById("exportBtn").onclick=()=>{const scale=20;const out=document.createElement("canvas");out.width=state.gridW*scale;out.height=state.gridH*scale;const octx=out.getContext("2d");for(let key in state.pixels){const [x,y]=key.split("_").map(Number);octx.fillStyle=state.pixels[key];octx.fillRect(x*scale,y*scale,scale,scale);}const link=document.createElement("a");link.download="pixel-art.png";link.href=out.toDataURL("image/png");link.click();};
+
+// ===== Image Loading =====
+const imageModal=document.getElementById("imageModal");
+let pendingImage=null;
+document.getElementById("loadImageBtn").onclick=()=>imageInput.click();
+imageInput.addEventListener("change",e=>{const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=ev=>{const img=new Image();img.onload=()=>{pendingImage=img;imageModal.classList.add("open");};img.src=ev.target.result;};reader.readAsDataURL(file);imageInput.value="";});
+function pixelateImage(mode){if(!pendingImage)return;const tmp=document.createElement("canvas");tmp.width=state.gridW;tmp.height=state.gridH;const tctx=tmp.getContext("2d");tctx.imageSmoothingEnabled=true;const iw=pendingImage.width,ih=pendingImage.height;const scale=Math.min(state.gridW/iw,state.gridH/ih);const dw=iw*scale,dh=ih*scale;const dx=(state.gridW-dw)/2,dy=(state.gridH-dh)/2;tctx.drawImage(pendingImage,dx,dy,dw,dh);const data=tctx.getImageData(0,0,state.gridW,state.gridH).data;if(mode==="replace")state.pixels={};for(let y=0;y<state.gridH;y++){for(let x=0;x<state.gridW;x++){const i=(y*state.gridW+x)*4;const r=data[i],g=data[i+1],b=data[i+2],a=data[i+3];if(a>32)state.pixels[x+"_"+y]=rgbToHex(r,g,b);}}drawGrid();pushHistory();save();pendingImage=null;imageModal.classList.remove("open");}
+document.getElementById("imgReplace").onclick=()=>pixelateImage("replace");
+document.getElementById("imgAdd").onclick=()=>pixelateImage("add");
+document.getElementById("imageCancel").onclick=()=>{pendingImage=null;imageModal.classList.remove("open");};
+imageModal.addEventListener("click",e=>{if(e.target===imageModal){pendingImage=null;imageModal.classList.remove("open");}});
+
+// ===== Templates =====
+const templateGrid=document.getElementById("templateGrid");
+const templateModal=document.getElementById("templateModal");
+let pendingTemplate=null;
+
+function renderTemplates(){
+  templateGrid.innerHTML="";
+  const t=i18n[state.lang];
+  templateMeta.forEach(meta=>{
+    const item=document.createElement("div");
+    item.className="template-item";
+    const c=document.createElement("canvas");
+    c.width=24;c.height=24;
+    const cx=c.getContext("2d");
+    const px=TEMPLATES[meta.key]();
+    for(let key in px){const [x,y]=key.split("_").map(Number);cx.fillStyle=px[key];cx.fillRect(x,y,1,1);}
+    const span=document.createElement("span");
+    span.textContent=t[meta.name];
+    item.appendChild(c);item.appendChild(span);
+    item.onclick=()=>{pendingTemplate=meta.key;templateModal.classList.add("open");};
+    templateGrid.appendChild(item);
+  });
+}
+function applyTemplate(mode){
+  if(!pendingTemplate)return;
+  const px=TEMPLATES[pendingTemplate]();
+  // templates are 24x24; scale to fit current grid if needed
+  const scaled=scalePixels(px,24,24,state.gridW,state.gridH);
+  if(mode==="replace")state.pixels={};
+  for(let key in scaled)state.pixels[key]=scaled[key];
+  drawGrid();pushHistory();save();
+  pendingTemplate=null;templateModal.classList.remove("open");wizardModal.classList.remove("open");
+}
+function scalePixels(px,sw,sh,dw,dh){
+  if(sw===dw&&sh===dh)return {...px};
+  const out={};
+  for(let y=0;y<dh;y++)for(let x=0;x<dw;x++){
+    const sx=Math.floor(x*sw/dw),sy=Math.floor(y*sh/dh);
+    const c=px[sx+"_"+sy];if(c)out[x+"_"+y]=c;
+  }
+  return out;
+}
+document.getElementById("tplReplace").onclick=()=>applyTemplate("replace");
+document.getElementById("tplAdd").onclick=()=>applyTemplate("add");
+document.getElementById("templateCancel").onclick=()=>{pendingTemplate=null;templateModal.classList.remove("open");};
+templateModal.addEventListener("click",e=>{if(e.target===templateModal){pendingTemplate=null;templateModal.classList.remove("open");}});
+
+// ===== Symmetry Demo =====
+const symSource=document.getElementById("symSource");
+const symResult=document.getElementById("symResult");
+const symSC=symSource.getContext("2d");
+const symRC=symResult.getContext("2d");
+const SYM_N=10, SYM_CELL=8;
+let symMode="x"; // x, y, both
+// a little sample drawing (left half stroke)
+const symDrawing = [
+  [2,2],[3,2],[2,3],[3,3],[1,5],[2,5],[3,5],[2,6],[2,7],[3,8],[4,8],[1,4]
+];
+function drawSymDemo(){
+  // source
+  symSC.clearRect(0,0,80,80);
+  symRC.clearRect(0,0,80,80);
+  // draw center axis line(s) helper on both
+  function grid(c){
+    c.strokeStyle="rgba(255,255,255,0.05)";c.lineWidth=1;
+    for(let i=0;i<=SYM_N;i++){c.beginPath();c.moveTo(i*SYM_CELL,0);c.lineTo(i*SYM_CELL,80);c.stroke();c.beginPath();c.moveTo(0,i*SYM_CELL);c.lineTo(80,i*SYM_CELL);c.stroke();}
+  }
+  grid(symSC);grid(symRC);
+  // axis lines
+  function axis(c){
+    c.strokeStyle="rgba(233,69,96,0.6)";c.lineWidth=1.5;
+    if(symMode==="x"||symMode==="both"){c.beginPath();c.moveTo(40,0);c.lineTo(40,80);c.stroke();}
+    if(symMode==="y"||symMode==="both"){c.beginPath();c.moveTo(0,40);c.lineTo(80,40);c.stroke();}
+  }
+  axis(symSC);axis(symRC);
+  // source pixels
+  symSC.fillStyle="#06d6a0";
+  symDrawing.forEach(([x,y])=>symSC.fillRect(x*SYM_CELL,y*SYM_CELL,SYM_CELL,SYM_CELL));
+  // result: original + mirrored
+  symRC.fillStyle="#06d6a0";
+  symDrawing.forEach(([x,y])=>symRC.fillRect(x*SYM_CELL,y*SYM_CELL,SYM_CELL,SYM_CELL));
+  symRC.fillStyle="#8338ec";
+  symDrawing.forEach(([x,y])=>{
+    if(symMode==="x"||symMode==="both")symRC.fillRect((SYM_N-1-x)*SYM_CELL,y*SYM_CELL,SYM_CELL,SYM_CELL);
+    if(symMode==="y"||symMode==="both")symRC.fillRect(x*SYM_CELL,(SYM_N-1-y)*SYM_CELL,SYM_CELL,SYM_CELL);
+    if(symMode==="both")symRC.fillRect((SYM_N-1-x)*SYM_CELL,(SYM_N-1-y)*SYM_CELL,SYM_CELL,SYM_CELL);
+  });
+}
+function setSymMode(m){
+  symMode=m;
+  document.getElementById("symX").classList.toggle("active",m==="x");
+  document.getElementById("symY").classList.toggle("active",m==="y");
+  document.getElementById("symBoth").classList.toggle("active",m==="both");
+  drawSymDemo();
+}
+document.getElementById("symX").onclick=()=>setSymMode("x");
+document.getElementById("symY").onclick=()=>setSymMode("y");
+document.getElementById("symBoth").onclick=()=>setSymMode("both");
+
+// ===== Wizards =====
+const wizardModal=document.getElementById("wizardModal");
+document.getElementById("wizardBtn").onclick=()=>{wizardModal.classList.add("open");setSymMode(symMode);};
+document.getElementById("wizardClose").onclick=()=>wizardModal.classList.remove("open");
+wizardModal.addEventListener("click",e=>{if(e.target===wizardModal)wizardModal.classList.remove("open");});
+
+const wizards={
+  checker(){const c1=state.currentColor,c2=state.palette[1]||"#ffffff";for(let y=0;y<state.gridH;y++)for(let x=0;x<state.gridW;x++)state.pixels[x+"_"+y]=(x+y)%2===0?c1:c2;},
+  gradient(){const c1=state.currentColor,c2=state.palette[9]||"#3a86ff";for(let y=0;y<state.gridH;y++)for(let x=0;x<state.gridW;x++)state.pixels[x+"_"+y]=lerpColor(c1,c2,x/(state.gridW-1));},
+  frame(){const c=state.currentColor;for(let x=0;x<state.gridW;x++){state.pixels[x+"_0"]=c;state.pixels[x+"_"+(state.gridH-1)]=c;}for(let y=0;y<state.gridH;y++){state.pixels["0_"+y]=c;state.pixels[(state.gridW-1)+"_"+y]=c;}},
+  noise(){const c=state.currentColor;for(let i=0;i<state.gridW*state.gridH*0.15;i++){const x=Math.floor(Math.random()*state.gridW),y=Math.floor(Math.random()*state.gridH);state.pixels[x+"_"+y]=c;}},
+  dither(){const c1=state.currentColor,c2=state.palette[0]||"#000000";for(let y=0;y<state.gridH;y++)for(let x=0;x<state.gridW;x++)state.pixels[x+"_"+y]=((x%2)===(y%2))?c1:c2;},
+  mirrorArt(){const half=Math.floor(state.gridW/2);for(let y=0;y<state.gridH;y++)for(let x=0;x<half;x++){const k=x+"_"+y;if(state.pixels[k])state.pixels[(state.gridW-1-x)+"_"+y]=state.pixels[k];else delete state.pixels[(state.gridW-1-x)+"_"+y];}},
+  invert(){for(let key in state.pixels){const c=hexToRgb(state.pixels[key]);state.pixels[key]=rgbToHex(255-c.r,255-c.g,255-c.b);}},
+  rainbowFill(){for(let y=0;y<state.gridH;y++){const col=hsl((y/state.gridH)*360,80,60);for(let x=0;x<state.gridW;x++)state.pixels[x+"_"+y]=col;}}
+};
+document.querySelectorAll(".wizard-item[data-wizard]").forEach(item=>{item.onclick=()=>{const w=item.dataset.wizard;if(wizards[w]){wizards[w]();drawGrid();pushHistory();save();}wizardModal.classList.remove("open");};});
+
+// ===== Language switch =====
+document.querySelectorAll(".lang-btn").forEach(btn=>{btn.onclick=()=>{state.lang=btn.dataset.lang;applyLang();save();};});
+
+window.addEventListener("keydown",e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==="z"){e.preventDefault();undo();}
+  if((e.ctrlKey||e.metaKey)&&(e.key==="y"||(e.shiftKey&&e.key==="z"))){e.preventDefault();redo();}
+  if(e.target.tagName==="INPUT")return;
+  if(e.key==="b")setTool("pen");if(e.key==="e")setTool("eraser");if(e.key==="g")setTool("fill");
+});
+
+// ===== Init =====
+window.addEventListener("resize",resizeCanvas);
+function init(){
+  load();
+  gridWInput.value=state.gridW;gridHInput.value=state.gridH;
+  colorPicker.value=state.currentColor;
+  brushSlider.value=state.brushSize;brushVal.textContent=state.brushSize;
+  document.getElementById("mirrorX").classList.toggle("active",state.mirrorX);
+  document.getElementById("mirrorY").classList.toggle("active",state.mirrorY);
+  applyLang();renderPalette();renderTemplates();setTool(state.tool);setOrientation(state.orientation);
+  resizeCanvas();pushHistory();updateHistoryUI();setSymMode("x");
+}
+init();
+</script>
+</body>
+</html>
